@@ -1,0 +1,43 @@
+# .gitignore
+
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+*.log
+
+# Node modules
+node_modules/
+
+# VS Code / IDE settings
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+
+# Playwright test artifacts
+playwright-report/
+test-results/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Dotnet tool manifest
+.dotnet-tools.json

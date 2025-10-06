@@ -1,2 +1,41 @@
-# Auto detect text files and perform LF normalization
+# Set default behavior to automatically normalize line endings
 * text=auto
+
+# Force text files to use LF on all platforms
+*.cs     text eol=lf
+*.csproj text eol=lf
+*.sln    text eol=lf
+*.xml    text eol=lf
+*.config text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+
+# Treat binary files correctly
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary
+*.zip    binary
+*.exe    binary
+*.dll    binary
+*.pdb    binary
+
+# Ensure UTF-8 encoding for text files
+*.cs     text encoding=utf-8
+*.csproj text encoding=utf-8
+*.xml    text encoding=utf-8
+*.json   text encoding=utf-8
+*.md     text encoding=utf-8
+
+# Ignore Playwright-generated browser binaries
+.playwright/** binary
+
+# Ignore build artifacts
+bin/**  binary
+obj/**  binary
+
+# Ignore NuGet package folders
+*.nupkg binary
+.packages/** binary
