@@ -25,8 +25,11 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Install Playwright Browsers
-        run: pwsh bin/Debug/net8.0/playwright.ps1 install --with-deps
+      - name: Install Playwright CLI
+        run: dotnet tool install --global Microsoft.Playwright.CLI
+
+      - name: Install Playwright browsers
+        run: playwright install --with-deps
 
       - name: Run Playwright tests
         run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test_results.trx"
@@ -38,5 +41,5 @@ jobs:
           name: test-results
           path: |
             **/TestResults/*.trx
-            playwright-report/
+            **/playwright-report/
           retention-days: 14
