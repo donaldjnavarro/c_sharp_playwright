@@ -12,38 +12,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
+    - name: Cache dependencies
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          ~/.nuget/packages
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-deps-v1-${{ hashFiles('**/package-lock.json', '**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
 
-      - name: Cache dependencies
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            ~/.nuget/packages
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json', '**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-deps-
+    - name: Install dependencies
+      run: |
+        npm ci
+        dotnet restore
+        dotnet build
 
-      - name: Install dependencies
-        run: |
-          npm ci
-          dotnet restore
+    - name: Install Playwright browsers (.NET)
+      run: |
+        if [ -f "PlaywrightTests/bin/Debug/net8.0/playwright.sh" ]; then
+          bash PlaywrightTests/bin/Debug/net8.0/playwright.sh install --with-deps
+        else
+          echo "⚠️ No playwright.sh found — did build succeed?"
+        fi
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+    - name: Run .NET Playwright tests
+      run: dotnet test --logger:"console;verbosity=detailed"
 
-      - name: Run .NET Playwright tests
-        run: dotnet test --logger:"console;verbosity=detailed"
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
