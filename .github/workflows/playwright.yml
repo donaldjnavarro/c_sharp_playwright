@@ -38,8 +38,8 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps
 
-    - name: Run Playwright tests
-      run: npx playwright test
+    - name: Run .NET Playwright tests
+      run: dotnet test --logger:"console;verbosity=detailed"
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
