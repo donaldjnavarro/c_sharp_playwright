@@ -25,7 +25,7 @@ jobs:
           ~/.npm
           ~/.nuget/packages
           ~/.cache/ms-playwright
-        key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json', '**/*.csproj') }}
+        key: ${{ runner.os }}-deps-v1-${{ hashFiles('**/package-lock.json', '**/*.csproj') }}
         restore-keys: |
           ${{ runner.os }}-deps-
 
