@@ -1,45 +1,97 @@
-name: .NET Playwright Tests
+name: Playwright Tests (.NET)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      # Install .NET 8 SDK (used for Playwright and tests).
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore dependencies
-        run: dotnet restore
+      # Cache NuGet dependencies to avoid re-downloading packages each run.
+      # Keyed by the hash of all .csproj files to refresh if dependencies change.
+      - name: Cache NuGet
+        id: nuget-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      # Cache Playwright browser binaries.
+      # Keyed to the Playwright test project so cache refreshes if that changes.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('PlaywrightTests/PlaywrightTests.csproj') }}
+          restore-keys: |
+            playwright-browsers-${{ runner.os }}-
 
-      - name: Install Playwright CLI
-        run: dotnet tool install --global Microsoft.Playwright.CLI
+      # Ensure the Playwright CLI tool is installed globally.
+      # Needed so we can run `playwright install` and similar commands.
+      - name: Install/Update Playwright CLI
+        run: |
+          dotnet tool update --global Microsoft.Playwright.CLI || dotnet tool install --global Microsoft.Playwright.CLI
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Install Playwright browsers
-        run: playwright install --with-deps
+      # Restore NuGet packages and build the Playwright test project.
+      # This ensures dependencies and compiled binaries are ready before testing.
+      - name: Restore and build
+        run: |
+          dotnet restore
+          dotnet build PlaywrightTests/PlaywrightTests.csproj --configuration Debug
 
-      - name: Run Playwright tests
-        run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test_results.trx"
+      # Verify that cached Playwright browsers exist.
+      # If they don’t, run `playwright install --with-deps` to download and set up.
+      # This avoids redundant downloads but still guarantees valid browser binaries.
+      - name: Ensure Playwright browsers installed (install only if missing)
+        run: |
+          set -euo pipefail
+          echo "Playwright cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+          shopt -s nullglob
+          files=(~/.cache/ms-playwright/*/chrome-linux/headless_shell)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Playwright browser executable found. Installing browsers..."
+            playwright install --with-deps
+          else
+            echo "Playwright browsers present. Skipping install."
+          fi
 
-      - name: Upload test results
+      # Run the actual Playwright tests under .NET.
+      # Using detailed console output for better visibility in CI logs.
+      - name: Run .NET Playwright tests
+        run: dotnet test PlaywrightTests/PlaywrightTests.csproj --logger:"console;verbosity=detailed"
+
+      # Upload Playwright HTML reports (if generated) for inspection.
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      # Upload NUnit / VSTest result files for debugging failed runs.
+      - name: Upload Test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: |
-            **/TestResults/*.trx
-            **/playwright-report/
-          retention-days: 14
+          path: '**/TestResults/*.trx'
+          retention-days: 30
