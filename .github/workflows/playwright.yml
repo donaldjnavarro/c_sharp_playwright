@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: Playwright Tests (.NET)
 
 on:
   push:
@@ -9,44 +9,39 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Cache dependencies
-      id: cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.npm
-          ~/.nuget/packages
-          ~/.cache/ms-playwright
-        key: ${{ runner.os }}-deps-v1-${{ hashFiles('**/package-lock.json', '**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-deps-
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Install dependencies
-      run: |
-        npm ci
-        dotnet restore
+      # Cache both NuGet and Playwright browsers
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-dotnet-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-dotnet-
 
-    - name: Build .NET project
-      run: dotnet build PlaywrightTests/PlaywrightTests.csproj --configuration Debug
+      - name: Build project
+        run: dotnet build PlaywrightTests/PlaywrightTests.csproj --configuration Debug
 
-    - name: Ensure Playwright browsers installed
-      run: dotnet exec PlaywrightTests/bin/Debug/net8.0/playwright.dll install --with-deps
+      # Install Playwright browsers only when cache missed
+      - name: Install Playwright browsers
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          bash PlaywrightTests/bin/Debug/net8.0/playwright.sh install --with-deps
 
-    - name: Run .NET Playwright tests
-      run: dotnet test --logger:"console;verbosity=detailed"
-
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Run tests
+        run: dotnet test PlaywrightTests/PlaywrightTests.csproj --logger:"console;verbosity=detailed"
