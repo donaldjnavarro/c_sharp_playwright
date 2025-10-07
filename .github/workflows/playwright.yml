@@ -1,4 +1,4 @@
-name: .NET Playwright Tests
+name: Playwright Tests
 
 on:
   push:
@@ -8,38 +8,42 @@ on:
 
 jobs:
   test:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+    - name: Cache dependencies
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          ~/.nuget/packages
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json', '**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
 
-      - name: Restore dependencies
-        run: dotnet restore
+    - name: Install dependencies
+      run: |
+        npm ci
+        dotnet restore
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+    - name: Install Playwright browsers (only if cache missed)
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: npx playwright install --with-deps
 
-      - name: Install Playwright CLI
-        run: dotnet tool install --global Microsoft.Playwright.CLI
+    - name: Run Playwright tests
+      run: npx playwright test
 
-      - name: Install Playwright browsers
-        run: playwright install --with-deps
-
-      - name: Run Playwright tests
-        run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test_results.trx"
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            **/TestResults/*.trx
-            **/playwright-report/
-          retention-days: 14
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
