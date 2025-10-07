@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
@@ -33,15 +34,12 @@ jobs:
       run: |
         npm ci
         dotnet restore
-        dotnet build
 
-    - name: Install Playwright browsers (.NET)
-      run: |
-        if [ -f "PlaywrightTests/bin/Debug/net8.0/playwright.sh" ]; then
-          bash PlaywrightTests/bin/Debug/net8.0/playwright.sh install --with-deps
-        else
-          echo "⚠️ No playwright.sh found — did build succeed?"
-        fi
+    - name: Build .NET project
+      run: dotnet build PlaywrightTests/PlaywrightTests.csproj --configuration Debug
+
+    - name: Ensure Playwright browsers installed
+      run: dotnet exec PlaywrightTests/bin/Debug/net8.0/playwright.dll install --with-deps
 
     - name: Run .NET Playwright tests
       run: dotnet test --logger:"console;verbosity=detailed"
