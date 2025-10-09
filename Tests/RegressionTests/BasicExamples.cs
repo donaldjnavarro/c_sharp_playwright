@@ -2,7 +2,7 @@ using NUnit.Framework;
 using Microsoft.Playwright;
 using System.Threading.Tasks;
 
-namespace PlaywrightTests
+namespace RegressionTests
 {
     [TestFixture]
     public class ExampleTests

@@ -20,7 +20,13 @@ dotnet restore
 npx playwright install
 ```
 
+Install `make`
+
 ## Usage
+
+See the `Makefile` for prepackaged commands. 
+
+Some basic command examples include...
 
 Run test:
 

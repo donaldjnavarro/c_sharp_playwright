@@ -31,6 +31,10 @@ Thumbs.db
 # Playwright test artifacts
 playwright-report/
 test-results/
+TestResults/
+report/
+TestResults.xmlmake test
+CoverageReport
 
 # Temporary files
 *.tmp
