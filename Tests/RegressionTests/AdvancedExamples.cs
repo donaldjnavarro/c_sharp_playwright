@@ -6,7 +6,7 @@ using System.IO;
 namespace RegressionTests
 {
     [TestFixture]
-    public class PlaywrightProofOfConceptTests
+    public class PlaywrightExamples
     {
         private IPlaywright _playwright = null!;
         private IBrowser _browser = null!;
@@ -26,93 +26,72 @@ namespace RegressionTests
             _page = await _context.NewPageAsync();
         }
 
-        [Test]
-        public async Task ShouldLoadExampleDotCom()
-        {
-            await _page.GotoAsync("https://example.com");
-            Assert.That(await _page.TitleAsync(), Is.EqualTo("Example Domain"));
-        }
-
-        [Test]
-        public async Task ShouldFillFormInputs()
-        {
-            await _page.GotoAsync("https://www.w3schools.com/html/html_forms.asp");
-
-            await _page.FillAsync("input[name='firstname']", "John");
-            await _page.FillAsync("input[name='lastname']", "Doe");
-
-            await _page.ScreenshotAsync(new PageScreenshotOptions
-            {
-                Path = "form_filled.png"
-            });
-
-            await _page.ClickAsync("input[type='submit']");
-
-            Assert.Pass("Form filled and submitted (test placeholder)");
-        }
-
-        [Test]
-        public async Task ShouldWaitAndAssertElementText()
-        {
-            await _page.GotoAsync("https://example.com");
-
-            var h1 = await _page.WaitForSelectorAsync("h1");
-            Assert.That(await h1.InnerTextAsync(), Is.EqualTo("Example Domain"));
-        }
-
-        [Test]
-        public async Task ShouldHandleJsAlert()
-        {
-            await _page.GotoAsync("https://the-internet.herokuapp.com/javascript_alerts");
-
-            _page.Dialog += async (_, dialog) =>
-            {
-                Assert.That(dialog.Type, Is.EqualTo("alert"));
-                Assert.That(dialog.Message, Is.EqualTo("I am a JS Alert"));
-                await dialog.AcceptAsync();
-            };
-
-            await _page.ClickAsync("button[onclick='jsAlert()']");
-        }
-
-        [Test]
-        public async Task ShouldEmulateMobileDevice()
-        {
-            var iphone = _playwright.Devices["iPhone 12"];
-            await _context.CloseAsync();
-
-            _context = await _browser.NewContextAsync(iphone);
-            _page = await _context.NewPageAsync();
-
-            await _page.GotoAsync("https://example.com");
-
-            var viewport = _page.ViewportSize;
-            Assert.That(viewport?.Width, Is.LessThanOrEqualTo(400));
-        }
-
-        [Test]
-        public async Task ShouldDownloadFile()
-        {
-            await _page.GotoAsync("https://file-examples.com/index.php/sample-documents-download/sample-pdf-download/");
-
-            var download = await _page.RunAndWaitForDownloadAsync(async () =>
-            {
-                await _page.ClickAsync("a[href*='file_example_PDF_1MB.pdf']");
-            });
-
-            var path = await download.PathAsync();
-
-            // Ensure file exists
-            Assert.That(File.Exists(path), Is.True, "Download file does not exist.");
-            Assert.That(path, Does.EndWith(".pdf"));
-        }
-
         [TearDown]
         public async Task Teardown()
         {
+            await _page.CloseAsync();
             await _context.CloseAsync();
             await _browser.CloseAsync();
             _playwright.Dispose();
+        }
+
+        [Test]
+        public async Task SimpleNavigationTest()
+        {
+            await _page.GotoAsync("https://example.com");
+            string title = await _page.TitleAsync();
+            Assert.AreEqual("Example Domain", title);
+        }
+
+        [Test]
+        public async Task FillFormTest()
+        {
+            await _page.SetContentAsync(@"
+                <form>
+                    <input id='name' type='text'/>
+                    <input id='submit' type='submit'/>
+                </form>");
+
+            await _page.FillAsync("#name", "Donald");
+            string value = await _page.InputValueAsync("#name");
+            Assert.AreEqual("Donald", value);
+        }
+
+        [Test]
+        public async Task DownloadFileTest()
+        {
+            // Create a simple page with a downloadable blob
+            await _page.SetContentAsync(@"
+                <a id='downloadLink' download='test.txt' href='data:text/plain,Hello%20World'>Download</a>");
+
+            string downloadPath = Path.Combine(Path.GetTempPath(), "test.txt");
+
+            var download = await _page.RunAndWaitForDownloadAsync(async () =>
+            {
+                await _page.Locator("#downloadLink").ClickAsync();
+            });
+
+            await download.SaveAsAsync(downloadPath);
+            Assert.IsTrue(File.Exists(downloadPath));
+
+            string contents = await File.ReadAllTextAsync(downloadPath);
+            Assert.AreEqual("Hello World", contents);
+
+            File.Delete(downloadPath);
+        }
+
+        [Test]
+        public async Task MultipleElementsTest()
+        {
+            await _page.SetContentAsync(@"
+                <ul>
+                    <li class='item'>One</li>
+                    <li class='item'>Two</li>
+                    <li class='item'>Three</li>
+                </ul>");
+
+            var items = _page.Locator(".item");
+            Assert.AreEqual(3, await items.CountAsync());
         }
     }
 }
