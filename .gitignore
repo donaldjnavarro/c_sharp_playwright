@@ -28,12 +28,6 @@ Thumbs.db
 *.snupkg
 .nuget/
 
-# Ignore everything inside Reports/
-Reports/*
-# Except keep a placeholder
-!Reports/.gitkeep
-!Reports/README.md
-
 # Temporary files
 *.tmp
 *.temp
@@ -43,3 +37,13 @@ Reports/*
 
 # Dotnet tool manifest
 .dotnet-tools.json
+
+# Ignore everything inside Reports/
+Reports/*
+# Except keep a placeholder
+!Reports/.gitkeep
+!Reports/README.md
+
+# Ignore all generated test artifacts
+**/TestResults/
+**/coverage.cobertura.xml
