@@ -1,7 +1,10 @@
 # --- CLEANUP ---
 clean:
 	@echo === Cleaning up old coverage reports ===
-	if exist Reports rmdir /s /q Reports
+	:: Remove old coverage files but keep Reports folder and its README.md
+	if exist Reports\UnitTests rmdir /s /q Reports\UnitTests
+	if exist Reports\RegressionTests rmdir /s /q Reports\RegressionTests
+	if exist Reports\CoverageReport rmdir /s /q Reports\CoverageReport
 	for /D %%d in (Tests\UnitTests\TestResults Tests\RegressionTests\TestResults) do @(if exist "%%d" rmdir /s /q "%%d")
 	@echo === Cleanup complete ===
 
