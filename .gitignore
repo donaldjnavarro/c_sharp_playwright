@@ -28,13 +28,11 @@ Thumbs.db
 *.snupkg
 .nuget/
 
-# Playwright test artifacts
-playwright-report/
-test-results/
-TestResults/
-report/
-TestResults.xmlmake test
-CoverageReport
+# Ignore everything inside Reports/
+Reports/*
+# Except keep a placeholder
+!Reports/.gitkeep
+!Reports/README.md
 
 # Temporary files
 *.tmp
