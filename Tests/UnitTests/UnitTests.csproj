@@ -5,6 +5,10 @@
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Force consistent coverage output -->
+    <CoverletOutput>$(MSBuildProjectDirectory)\coverage\</CoverletOutput>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +20,9 @@
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.4.0" />
     <PackageReference Include="NunitXml.TestLogger" Version="7.0.1" />
-    <!-- Add Playwright if UnitTests use it, otherwise omit -->
+    <!-- Add Playwright if UnitTests use it -->
     <!--<PackageReference Include="Microsoft.Playwright" Version="1.55.0" />-->
-    
+
     <ProjectReference Include="..\..\MyApp\MyApp.csproj" />
   </ItemGroup>
 

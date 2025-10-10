@@ -1,27 +1,31 @@
 # Makefile for Windows PowerShell / cmd
 
-# Ensure coverage folders exist
 coverage_dirs:
-	if not exist Tests\UnitTests\coverage mkdir Tests\UnitTests\coverage
-	if not exist Tests\RegressionTests\coverage mkdir Tests\RegressionTests\coverage
-	if not exist TestResults mkdir TestResults
+	if not exist Reports mkdir Reports
+	if not exist Reports\UnitTests mkdir Reports\UnitTests
+	if not exist Reports\RegressionTests mkdir Reports\RegressionTests
 
 # Run UnitTests with coverage
 unit-tests: coverage_dirs
 	@echo Running UnitTests with coverage...
-	cmd /c dotnet test "Tests\UnitTests\UnitTests.csproj" --logger:nunit;LogFileName="TestResults\UnitTests_TestResults.xml" --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=cobertura /p:CoverletOutput="Tests\UnitTests\coverage\coverage.cobertura.xml" /p:SkipFailedTests=false
+	cmd /c dotnet test "Tests\UnitTests\UnitTests.csproj" --collect:"XPlat Code Coverage" /p:SkipFailedTests=false
+	@echo Copying UnitTests coverage XML to Reports...
+	for /D %%d in ("Tests\UnitTests\TestResults\*") do if exist "%%d\coverage.cobertura.xml" copy /Y "%%d\coverage.cobertura.xml" "Reports\UnitTests\coverage.cobertura.xml"
 
-# Run RegressionTests with coverage, continue on failure
+# Run RegressionTests with coverage
 regression-tests: coverage_dirs
 	@echo Running RegressionTests with coverage (ignoring failures)...
-	cmd /c dotnet test "Tests\RegressionTests\RegressionTests.csproj" --logger:nunit;LogFileName="TestResults\RegressionTests_TestResults.xml" --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=cobertura /p:CoverletOutput="Tests\RegressionTests\coverage\coverage.cobertura.xml" /p:SkipFailedTests=false || echo Regression tests failed, continuing...
+	cmd /c dotnet test "Tests\RegressionTests\RegressionTests.csproj" --collect:"XPlat Code Coverage" /p:SkipFailedTests=false || echo Regression tests failed, continuing...
+	@echo Copying RegressionTests coverage XML to Reports...
+	for /D %%d in ("Tests\RegressionTests\TestResults\*") do if exist "%%d\coverage.cobertura.xml" copy /Y "%%d\coverage.cobertura.xml" "Reports\RegressionTests\coverage.cobertura.xml"
 
 # Generate combined HTML coverage report
 coverage-report: coverage_dirs
 	@echo Generating HTML coverage report...
-	cmd /c dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.1.17 || echo ReportGenerator already installed
-	cmd /c reportgenerator -reports:"Tests\UnitTests\coverage\coverage.cobertura.xml;Tests\RegressionTests\coverage\coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:Html
+	cmd /c dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.4.17 || echo ReportGenerator already installed
+	cmd /c reportgenerator -reports:"Reports\UnitTests\coverage.cobertura.xml;Reports\RegressionTests\coverage.cobertura.xml" -targetdir:"Reports\CoverageReport" -reporttypes:HtmlInline
+	start "" "Reports\CoverageReport\index.html"
 
-# Run all steps
+# Run everything
 all: unit-tests regression-tests coverage-report
 	@echo All steps completed successfully.
